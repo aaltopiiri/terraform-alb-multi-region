@@ -89,13 +89,118 @@ resource "aws_route_table" "public_us" {
   }
 }
 
-resource "aws_route_table_association" "public" {
+resource "aws_route_table_association" "public_us" {
   provider                         = aws
   count          = length(data.aws_availability_zones.available_us.names)
   subnet_id      = element(aws_subnet.public_us.*.id, count.index)
   route_table_id = aws_route_table.public_us.id
 }
 
+resource "aws_security_group" "sg_us" {
+  provider                         = aws
+  name = "leadgen-http-default"
+  vpc_id = aws_vpc.main_us.id
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    ipv6_cidr_blocks     = ["::/0"]
+  }
+
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    ipv6_cidr_blocks     = ["::/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    ipv6_cidr_blocks     = ["::/0"]
+  }
+
+  tags = {
+    Name = "leadgen-http-default"
+  }
+}
+
+ data "aws_vpc" "default_us" {
+ provider                         = aws  
+ id = aws_vpc.main_us.id
+} 
+
+ data "aws_subnet_ids" "all_us" {
+  provider                         = aws
+  vpc_id = data.aws_vpc.default_us.id
+  //depends_on = [aws_vpc.main]
+} 
+
+ resource "aws_lb" "alb_us" {
+  provider                         = aws 
+  name            = "lgp-tds-alb-1d"
+  load_balancer_type = "application"
+  security_groups = [aws_security_group.sg_us.id]
+  subnets         = data.aws_subnet_ids.all_us.ids
+  ip_address_type = "dualstack"
+  tags = {
+    Name = "leadgen-alb"
+  }
+} 
+
+
+resource "aws_lb_target_group" "group_us" {
+  provider                         = aws
+  name     = "leadgen-alb-target"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = data.aws_vpc.default_us.id
+
+  health_check {
+    enabled             = true
+    interval            = 30  
+    path = "/"
+    port = 80
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    timeout             = 5
+    protocol            = "HTTP"
+  }
+}
+
+resource "aws_lb_listener" "listener_http_us" {
+  provider                         = aws
+  load_balancer_arn = aws_lb.alb_us.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    target_group_arn = aws_lb_target_group.group_us.arn
+    type             = "forward"
+  }
+}
 
 //Region eu-west-1
 
@@ -176,6 +281,111 @@ resource "aws_route_table_association" "public_eu" {
   route_table_id = aws_route_table.public_eu.id
 }
 
+resource "aws_security_group" "sg_eu" {
+  provider                         = aws.eu
+  name = "leadgen-http-default"
+  vpc_id = aws_vpc.main_eu.id
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    ipv6_cidr_blocks     = ["::/0"]
+  }
+
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    ipv6_cidr_blocks     = ["::/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    ipv6_cidr_blocks     = ["::/0"]
+  }
+
+  tags = {
+    Name = "leadgen-http-default"
+  }
+}
+
+ data "aws_vpc" "default_eu" {
+ provider                         = aws.eu  
+ id = aws_vpc.main_eu.id
+} 
+
+ data "aws_subnet_ids" "all_eu" {
+  provider                         = aws.eu
+  vpc_id = data.aws_vpc.default_eu.id
+  //depends_on = [aws_vpc.main]
+} 
+
+ resource "aws_lb" "alb_eu" {
+  provider                         = aws.eu
+  name            = "lgp-tds-alb-1d"
+  load_balancer_type = "application"
+  security_groups = [aws_security_group.sg_eu.id]
+  subnets         = data.aws_subnet_ids.all_eu.ids
+  ip_address_type = "dualstack"
+  tags = {
+    Name = "leadgen-alb"
+  }
+} 
+
+
+resource "aws_lb_target_group" "group_eu" {
+  provider                         = aws.eu
+  name     = "leadgen-alb-target"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = data.aws_vpc.default_eu.id
+
+  health_check {
+    enabled             = true
+    interval            = 30  
+    path = "/"
+    port = 80
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    timeout             = 5
+    protocol            = "HTTP"
+  }
+}
+
+resource "aws_lb_listener" "listener_http_eu" {
+  provider                         = aws.eu
+  load_balancer_arn = aws_lb.alb_eu.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    target_group_arn = aws_lb_target_group.group_eu.arn
+    type             = "forward"
+  }
+}
 
 //Region ap-south-1
 
@@ -254,4 +464,110 @@ resource "aws_route_table_association" "public_ap" {
   count          = length(data.aws_availability_zones.available_ap.names)
   subnet_id      = element(aws_subnet.public_ap.*.id, count.index)
   route_table_id = aws_route_table.public_ap.id
+}
+
+resource "aws_security_group" "sg_ap" {
+  provider                         = aws.ap
+  name = "leadgen-http-default"
+  vpc_id = aws_vpc.main_ap.id
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    ipv6_cidr_blocks     = ["::/0"]
+  }
+
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    ipv6_cidr_blocks     = ["::/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    ipv6_cidr_blocks     = ["::/0"]
+  }
+
+  tags = {
+    Name = "leadgen-http-default"
+  }
+}
+
+ data "aws_vpc" "default_ap" {
+ provider                         = aws.ap  
+ id = aws_vpc.main_ap.id
+} 
+
+ data "aws_subnet_ids" "all_ap" {
+  provider                         = aws.ap
+  vpc_id = data.aws_vpc.default_ap.id
+  //depends_on = [aws_vpc.main]
+} 
+
+ resource "aws_lb" "alb_ap" {
+  provider                         = aws.ap 
+  name            = "lgp-tds-alb-1d"
+  load_balancer_type = "application"
+  security_groups = [aws_security_group.sg_ap.id]
+  subnets         = data.aws_subnet_ids.all_ap.ids
+  ip_address_type = "dualstack"
+  tags = {
+    Name = "leadgen-alb"
+  }
+} 
+
+
+resource "aws_lb_target_group" "group_ap" {
+  provider                         = aws.ap
+  name     = "leadgen-alb-target"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = data.aws_vpc.default_ap.id
+
+  health_check {
+    enabled             = true
+    interval            = 30  
+    path = "/"
+    port = 80
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    timeout             = 5
+    protocol            = "HTTP"
+  }
+}
+
+resource "aws_lb_listener" "listener_http_ap" {
+  provider                         = aws.ap
+  load_balancer_arn = aws_lb.alb_ap.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    target_group_arn = aws_lb_target_group.group_ap.arn
+    type             = "forward"
+  }
 }
