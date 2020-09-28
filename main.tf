@@ -441,6 +441,10 @@ resource "aws_route53_health_check" "health_check_eu" {
   }
 }
 
+/* data "aws_lb_target_group" "tg_eu" {
+  fqdn = aws_lb_target_group.group_eu.health_check.fqdn
+} */
+
 //Failover Policy
 
 resource "aws_route53_record" "a-failover-primary-eu-west-1" {
