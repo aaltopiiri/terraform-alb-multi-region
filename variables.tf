@@ -15,3 +15,7 @@ variable "zone_name" {
   type    = string
   default = "aaltopiiri.space"
 }
+variable "is_alb" {
+  type    = bool
+  default = false
+}

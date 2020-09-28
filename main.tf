@@ -455,9 +455,9 @@ resource "aws_route53_record" "a-failover-secondary-eu-west-1" {
 
   set_identifier = "eu-west-1-secondary-a"
   alias {
-    name                   = aws_lb.alb_eu.dns_name
-    zone_id                = aws_lb.alb_eu.zone_id
-    evaluate_target_health = true
+    name                   = aws_lb.alb_us.dns_name
+    zone_id                = aws_lb.alb_us.zone_id
+    evaluate_target_health = false
   }
 }
 
@@ -490,9 +490,9 @@ resource "aws_route53_record" "aaaa-failover-secondary-eu-west-1" {
 
   set_identifier = "eu-west-1-secondary-aaaa"
   alias {
-    name                   = aws_lb.alb_eu.dns_name
-    zone_id                = aws_lb.alb_eu.zone_id
-    evaluate_target_health = true
+    name                   = aws_lb.alb_us.dns_name
+    zone_id                = aws_lb.alb_us.zone_id
+    evaluate_target_health = false
   }
 }
 
@@ -511,6 +511,9 @@ resource "aws_route53_record" "a-latency-eu-west-1" {
     zone_id                = data.aws_route53_zone.zone.zone_id
     evaluate_target_health = false
   }
+    lifecycle {
+create_before_destroy = true
+}
 }
 
 resource "aws_route53_record" "aaaa-latency-eu-west-1" {
@@ -526,6 +529,9 @@ resource "aws_route53_record" "aaaa-latency-eu-west-1" {
     zone_id                = data.aws_route53_zone.zone.zone_id
     evaluate_target_health = false
   }
+    lifecycle {
+create_before_destroy = true
+}
 }
 
 
@@ -745,9 +751,9 @@ resource "aws_route53_record" "a-failover-secondary-ap-south-1" {
 
   set_identifier = "ap-south-1-secondary-a"
   alias {
-    name                   = aws_lb.alb_ap.dns_name
-    zone_id                = aws_lb.alb_ap.zone_id
-    evaluate_target_health = true
+    name                   = aws_lb.alb_us.dns_name
+    zone_id                = aws_lb.alb_us.zone_id
+    evaluate_target_health = false
   }
 }
 
@@ -780,9 +786,9 @@ resource "aws_route53_record" "aaaa-failover-secondary-ap-south-1" {
 
   set_identifier = "ap-south-1-secondary-aaaa"
   alias {
-    name                   = aws_lb.alb_ap.dns_name
-    zone_id                = aws_lb.alb_ap.zone_id
-    evaluate_target_health = true
+    name                   = aws_lb.alb_us.dns_name
+    zone_id                = aws_lb.alb_us.zone_id
+    evaluate_target_health = false
   }
 }
 
@@ -801,11 +807,14 @@ resource "aws_route53_record" "a-latency-ap-south-1" {
     zone_id                = data.aws_route53_zone.zone.zone_id
     evaluate_target_health = false
   }
+    lifecycle {
+create_before_destroy = true
+}
 }
 
 resource "aws_route53_record" "aaaa-latency-ap-south-1" {
   zone_id        = data.aws_route53_zone.zone.zone_id
-  name           = "var.zone_name"
+  name           = var.zone_name
   type           = "AAAA"
   set_identifier = "cdp-tds-ap-south-1-aaaa"
   latency_routing_policy {
@@ -816,6 +825,9 @@ resource "aws_route53_record" "aaaa-latency-ap-south-1" {
     zone_id                = data.aws_route53_zone.zone.zone_id
     evaluate_target_health = false
   }
+    lifecycle {
+create_before_destroy = true
+}
 }
 
 //Generate Certificate
