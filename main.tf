@@ -23,6 +23,7 @@ data "aws_route53_zone" "zone" {
   name = "${var.zone_name}"
 }
 
+
 //Region us-east-1
 
 provider "aws" {
@@ -424,12 +425,28 @@ resource "aws_lb_listener" "listener_http_eu" {
   }
 }
 
+//Health Check
+
+resource "aws_route53_health_check" "health_check_eu" {
+  fqdn              = "example.com"
+  port              = 80
+  type              = "HTTP"
+  resource_path     = "/status"
+  failure_threshold = "5"
+  request_interval  = "30"
+
+  tags = {
+    Name = "tf-eu-health-check"
+  }
+}
+
 //Failover Policy
 
 resource "aws_route53_record" "a-failover-primary-eu-west-1" {
   zone_id = data.aws_route53_zone.zone.zone_id
   name    = "eu-west-1.${var.zone_name}"
   type    = "A"
+  health_check_id = aws_route53_health_check.health_check_eu.id
 
   failover_routing_policy {
     type = "PRIMARY"
@@ -465,6 +482,7 @@ resource "aws_route53_record" "aaaa-failover-primary-eu-west-1" {
   zone_id = data.aws_route53_zone.zone.zone_id
   name    = "eu-west-1.${var.zone_name}"
   type    = "AAAA"
+  health_check_id = aws_route53_health_check.health_check_eu.id
 
   failover_routing_policy {
     type = "PRIMARY"
@@ -508,7 +526,7 @@ resource "aws_route53_record" "a-latency-eu-west-1" {
   }
   alias {
     name                   = "eu-west-1.${var.zone_name}."
-    zone_id                = data.aws_route53_zone.zone.zone_id
+    zone_id                = aws_route53_record.a-latency-us-east-1.zone_id
     evaluate_target_health = false
   }
     lifecycle {
@@ -526,7 +544,7 @@ resource "aws_route53_record" "aaaa-latency-eu-west-1" {
   }
   alias {
     name                   = "eu-west-1.${var.zone_name}."
-    zone_id                = data.aws_route53_zone.zone.zone_id
+    zone_id                = aws_route53_record.aaaa-latency-us-east-1.zone_id
     evaluate_target_health = false
   }
     lifecycle {
@@ -720,12 +738,28 @@ resource "aws_lb_listener" "listener_http_ap" {
   }
 }
 
+//Health Check
+
+resource "aws_route53_health_check" "health_check_ap" {
+  fqdn              = "example.com"
+  port              = 80
+  type              = "HTTP"
+  resource_path     = "/status"
+  failure_threshold = "5"
+  request_interval  = "30"
+
+  tags = {
+    Name = "tf-ap-health-check"
+  }
+}
+
 //Failover Policy
 
 resource "aws_route53_record" "a-failover-primary-ap-south-1" {
   zone_id = data.aws_route53_zone.zone.zone_id
   name    = "ap-south-1.${var.zone_name}"
   type    = "A"
+  health_check_id = aws_route53_health_check.health_check_ap.id
 
   failover_routing_policy {
     type = "PRIMARY"
@@ -761,6 +795,7 @@ resource "aws_route53_record" "aaaa-failover-primary-ap-south-1" {
   zone_id = data.aws_route53_zone.zone.zone_id
   name    = "ap-south-1.${var.zone_name}"
   type    = "AAAA"
+  health_check_id = aws_route53_health_check.health_check_ap.id
 
   failover_routing_policy {
     type = "PRIMARY"
@@ -804,7 +839,8 @@ resource "aws_route53_record" "a-latency-ap-south-1" {
   }
   alias {
     name                   = "ap-south-1.${var.zone_name}."
-    zone_id                = data.aws_route53_zone.zone.zone_id
+    zone_id                = aws_route53_record.a-latency-us-east-1.zone_id
+    //zone_id                = data.aws_route53_zone.zone.zone_id
     evaluate_target_health = false
   }
     lifecycle {
@@ -822,7 +858,7 @@ resource "aws_route53_record" "aaaa-latency-ap-south-1" {
   }
   alias {
     name                   = "ap-south-1.${var.zone_name}."
-    zone_id                = data.aws_route53_zone.zone.zone_id
+    zone_id                = aws_route53_record.aaaa-latency-us-east-1.zone_id
     evaluate_target_health = false
   }
     lifecycle {
