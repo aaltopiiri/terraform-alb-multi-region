@@ -40,7 +40,7 @@ data "aws_availability_zones" "available_us" {
 
 resource "aws_vpc" "main_us" {
   provider                         = aws
-  cidr_block                       = "10.41.0.0/16"
+  cidr_block                       = "10.11.0.0/16"
   assign_generated_ipv6_cidr_block = "true"
   enable_dns_support               = "true"
   enable_dns_hostnames             = "true"
@@ -257,7 +257,7 @@ data "aws_availability_zones" "available_eu" {
 
 resource "aws_vpc" "main_eu" {
   provider                         = aws.eu
-  cidr_block                       = "10.41.0.0/16"
+  cidr_block                       = "10.121.0.0/16"
   assign_generated_ipv6_cidr_block = "true"
   enable_dns_support               = "true"
   enable_dns_hostnames             = "true"
@@ -570,7 +570,7 @@ data "aws_availability_zones" "available_ap" {
 
 resource "aws_vpc" "main_ap" {
   provider                         = aws.ap
-  cidr_block                       = "10.41.0.0/16"
+  cidr_block                       = "10.131.0.0/16"
   assign_generated_ipv6_cidr_block = "true"
   enable_dns_support               = "true"
   enable_dns_hostnames             = "true"
