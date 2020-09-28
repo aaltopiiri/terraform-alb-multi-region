@@ -429,6 +429,7 @@ resource "aws_lb_listener" "listener_http_eu" {
 
 resource "aws_route53_health_check" "health_check_eu" {
   fqdn              = "example.com"
+  //fqdn              = aws_lb_target_group.group_eu.fqdn
   port              = 80
   type              = "HTTP"
   resource_path     = "/status"
@@ -742,6 +743,7 @@ resource "aws_lb_listener" "listener_http_ap" {
 
 resource "aws_route53_health_check" "health_check_ap" {
   fqdn              = "example.com"
+  //fqdn              = aws_lb_target_group.group_ap.health_check.fqdn
   port              = 80
   type              = "HTTP"
   resource_path     = "/status"
