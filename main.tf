@@ -18,6 +18,11 @@ terraform {
 }
 
 
+data "aws_route53_zone" "zone" {
+  //provider                         = aws
+  name = "${var.zone_name}"
+}
+
 //Region us-east-1
 
 provider "aws" {
@@ -181,7 +186,7 @@ resource "aws_lb_target_group" "group_us" {
   health_check {
     enabled             = true
     interval            = 30  
-    path = "/"
+    path = "/status"
     port = 80
     healthy_threshold   = 3
     unhealthy_threshold = 3
@@ -199,6 +204,38 @@ resource "aws_lb_listener" "listener_http_us" {
   default_action {
     target_group_arn = aws_lb_target_group.group_us.arn
     type             = "forward"
+  }
+}
+
+//Latency Policy
+
+resource "aws_route53_record" "a-latency-us-east-1" {
+  zone_id        = data.aws_route53_zone.zone.zone_id
+  name           = var.zone_name
+  type           = "A"
+  set_identifier = "cdp-tds-us-east-1-a"
+  latency_routing_policy {
+    region = "us-east-1"
+  }
+  alias {
+    name                   = aws_lb.alb_us.dns_name
+    zone_id                = aws_lb.alb_us.zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "aaaa-latency-us-east-1" {
+  zone_id        = data.aws_route53_zone.zone.zone_id
+  name           = var.zone_name
+  type           = "AAAA"
+  set_identifier = "cdp-tds-us-east-1-aaaa"
+  latency_routing_policy {
+    region = "us-east-1"
+  }
+  alias {
+    name                   = aws_lb.alb_us.dns_name
+    zone_id                = aws_lb.alb_us.zone_id
+    evaluate_target_health = false
   }
 }
 
@@ -366,7 +403,7 @@ resource "aws_lb_target_group" "group_eu" {
   health_check {
     enabled             = true
     interval            = 30  
-    path = "/"
+    path = "/status"
     port = 80
     healthy_threshold   = 3
     unhealthy_threshold = 3
@@ -386,6 +423,111 @@ resource "aws_lb_listener" "listener_http_eu" {
     type             = "forward"
   }
 }
+
+//Failover Policy
+
+resource "aws_route53_record" "a-failover-primary-eu-west-1" {
+  zone_id = data.aws_route53_zone.zone.zone_id
+  name    = "eu-west-1.${var.zone_name}"
+  type    = "A"
+
+  failover_routing_policy {
+    type = "PRIMARY"
+  }
+
+  set_identifier = "eu-west-1-primary-a"
+  alias {
+    name                   = aws_lb.alb_eu.dns_name
+    zone_id                = aws_lb.alb_eu.zone_id
+    evaluate_target_health = true
+  }
+
+}
+
+resource "aws_route53_record" "a-failover-secondary-eu-west-1" {
+  zone_id = data.aws_route53_zone.zone.zone_id
+  name    = "eu-west-1.${var.zone_name}"
+  type    = "A"
+
+  failover_routing_policy {
+    type = "SECONDARY"
+  }
+
+  set_identifier = "eu-west-1-secondary-a"
+  alias {
+    name                   = aws_lb.alb_eu.dns_name
+    zone_id                = aws_lb.alb_eu.zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "aaaa-failover-primary-eu-west-1" {
+  zone_id = data.aws_route53_zone.zone.zone_id
+  name    = "eu-west-1.${var.zone_name}"
+  type    = "AAAA"
+
+  failover_routing_policy {
+    type = "PRIMARY"
+  }
+
+  set_identifier = "eu-west-1-primary-aaaa"
+  alias {
+    name                   = aws_lb.alb_eu.dns_name
+    zone_id                = aws_lb.alb_eu.zone_id
+    evaluate_target_health = true
+  }
+
+}
+
+resource "aws_route53_record" "aaaa-failover-secondary-eu-west-1" {
+  zone_id = data.aws_route53_zone.zone.zone_id
+  name    = "eu-west-1.${var.zone_name}"
+  type    = "AAAA"
+
+  failover_routing_policy {
+    type = "SECONDARY"
+  }
+
+  set_identifier = "eu-west-1-secondary-aaaa"
+  alias {
+    name                   = aws_lb.alb_eu.dns_name
+    zone_id                = aws_lb.alb_eu.zone_id
+    evaluate_target_health = true
+  }
+}
+
+//Latency Policy eu-west-1
+
+resource "aws_route53_record" "a-latency-eu-west-1" {
+  zone_id        = data.aws_route53_zone.zone.zone_id
+  name           = var.zone_name
+  type           = "A"
+  set_identifier = "cdp-tds-eu-west-1-a"
+  latency_routing_policy {
+    region = "eu-west-1"
+  }
+  alias {
+    name                   = "eu-west-1.${var.zone_name}."
+    zone_id                = data.aws_route53_zone.zone.zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "aaaa-latency-eu-west-1" {
+  zone_id        = data.aws_route53_zone.zone.zone_id
+  name           = var.zone_name
+  type           = "AAAA"
+  set_identifier = "cdp-tds-eu-west-1-aaaa"
+  latency_routing_policy {
+    region = "eu-west-1"
+  }
+  alias {
+    name                   = "eu-west-1.${var.zone_name}."
+    zone_id                = data.aws_route53_zone.zone.zone_id
+    evaluate_target_health = false
+  }
+}
+
 
 //Region ap-south-1
 
@@ -551,7 +693,7 @@ resource "aws_lb_target_group" "group_ap" {
   health_check {
     enabled             = true
     interval            = 30  
-    path = "/"
+    path = "/status"
     port = 80
     healthy_threshold   = 3
     unhealthy_threshold = 3
@@ -570,4 +712,118 @@ resource "aws_lb_listener" "listener_http_ap" {
     target_group_arn = aws_lb_target_group.group_ap.arn
     type             = "forward"
   }
+}
+
+//Failover Policy
+
+resource "aws_route53_record" "a-failover-primary-ap-south-1" {
+  zone_id = data.aws_route53_zone.zone.zone_id
+  name    = "ap-south-1.${var.zone_name}"
+  type    = "A"
+
+  failover_routing_policy {
+    type = "PRIMARY"
+  }
+
+  set_identifier = "ap-south-1-primary-a"
+  alias {
+    name                   = aws_lb.alb_ap.dns_name
+    zone_id                = aws_lb.alb_ap.zone_id
+    evaluate_target_health = true
+  }
+
+}
+
+resource "aws_route53_record" "a-failover-secondary-ap-south-1" {
+  zone_id = data.aws_route53_zone.zone.zone_id
+  name    = "ap-south-1.${var.zone_name}"
+  type    = "A"
+
+  failover_routing_policy {
+    type = "SECONDARY"
+  }
+
+  set_identifier = "ap-south-1-secondary-a"
+  alias {
+    name                   = aws_lb.alb_ap.dns_name
+    zone_id                = aws_lb.alb_ap.zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "aaaa-failover-primary-ap-south-1" {
+  zone_id = data.aws_route53_zone.zone.zone_id
+  name    = "ap-south-1.${var.zone_name}"
+  type    = "AAAA"
+
+  failover_routing_policy {
+    type = "PRIMARY"
+  }
+
+  set_identifier = "ap-south-1-primary-aaaa"
+  alias {
+    name                   = aws_lb.alb_ap.dns_name
+    zone_id                = aws_lb.alb_ap.zone_id
+    evaluate_target_health = true
+  }
+
+}
+
+resource "aws_route53_record" "aaaa-failover-secondary-ap-south-1" {
+  zone_id = data.aws_route53_zone.zone.zone_id
+  name    = "ap-south-1.${var.zone_name}"
+  type    = "AAAA"
+
+  failover_routing_policy {
+    type = "SECONDARY"
+  }
+
+  set_identifier = "ap-south-1-secondary-aaaa"
+  alias {
+    name                   = aws_lb.alb_ap.dns_name
+    zone_id                = aws_lb.alb_ap.zone_id
+    evaluate_target_health = true
+  }
+}
+
+//Latency Policy
+
+resource "aws_route53_record" "a-latency-ap-south-1" {
+  zone_id        = data.aws_route53_zone.zone.zone_id
+  name           = var.zone_name
+  type           = "A"
+  set_identifier = "cdp-tds-ap-south-1-a"
+  latency_routing_policy {
+    region = "ap-south-1"
+  }
+  alias {
+    name                   = "ap-south-1.${var.zone_name}."
+    zone_id                = data.aws_route53_zone.zone.zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "aaaa-latency-ap-south-1" {
+  zone_id        = data.aws_route53_zone.zone.zone_id
+  name           = "var.zone_name"
+  type           = "AAAA"
+  set_identifier = "cdp-tds-ap-south-1-aaaa"
+  latency_routing_policy {
+    region = "ap-south-1"
+  }
+  alias {
+    name                   = "ap-south-1.${var.zone_name}."
+    zone_id                = data.aws_route53_zone.zone.zone_id
+    evaluate_target_health = false
+  }
+}
+
+//Generate Certificate
+
+module "acm_request_certificate" {
+  source                            = "git::https://github.com/cloudposse/terraform-aws-acm-request-certificate.git?ref=tags/0.7.0"
+  domain_name                       = "${var.zone_name}"
+  process_domain_validation_options = true
+  ttl                               = "300"
+  subject_alternative_names         = ["*.${var.zone_name}"]
 }
