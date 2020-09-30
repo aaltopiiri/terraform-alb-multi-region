@@ -743,7 +743,7 @@ resource "aws_lb_listener" "listener_http_ap" {
   }
 }
 
-//Health Check
+//Health Check ap-south-1
 
 resource "aws_route53_health_check" "health_check_ap" {
   fqdn              = "example.com"
@@ -759,7 +759,7 @@ resource "aws_route53_health_check" "health_check_ap" {
   }
 }
 
-//Failover Policy
+//Failover Policy ap-south-1
 
 resource "aws_route53_record" "a-failover-primary-ap-south-1" {
   zone_id = data.aws_route53_zone.zone.zone_id
@@ -833,7 +833,7 @@ resource "aws_route53_record" "aaaa-failover-secondary-ap-south-1" {
   }
 }
 
-//Latency Policy
+//Latency Policy ap-south-1
 
 resource "aws_route53_record" "a-latency-ap-south-1" {
   zone_id        = data.aws_route53_zone.zone.zone_id
